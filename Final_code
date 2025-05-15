@@ -1,0 +1,207 @@
+import React, { Component } from 'react';
+import { AppRegistry, Text, View, TextInput, TouchableOpacity, StyleSheet, Alert, Keyboard } from 'react-native';
+
+const wordList = [
+  'apple', 'grape', 'lemon', 'mango', 'peach', 'brick', 'candy', 'drink', 'eagle', 'flame',
+  'chair', 'zebra', 'piano', 'clock', 'blush', 'crane', 'flute', 'glass', 'house', 'jelly',
+  'knife', 'light', 'mouse', 'nails', 'organ', 'paint', 'queen', 'river', 'spoon', 'tiger'
+];
+
+let answer = '';
+
+export default class App extends Component {
+  constructor(props) {
+    super(props);
+    this.state = {
+      screen: 'start',
+      guess: '',
+      personsGuesses: Array(6).fill(''), 
+      currentTry: 0
+    };
+
+    
+    this.inputRef = null;
+    this.setInputRef = element => {
+      this.inputRef = element;
+    };
+  }
+
+  startGame = () => {
+    const randomIndex = Math.floor(Math.random() * wordList.length);
+    answer = wordList[randomIndex].toUpperCase();
+    this.setState({
+      screen: 'game',
+      guess: '',
+      personsGuesses: Array(6).fill(''),
+      currentTry: 0
+    }, () => {
+      if (this.inputRef) {
+        this.inputRef.focus(); 
+      }
+    });
+  };
+
+  submitGuess = () => {
+    const guess = this.state.guess.toUpperCase();
+
+    if (guess.length !== 5) {
+      Alert.alert('Please enter a 5-letter word.');
+      return;
+    }
+
+    const newGuesses = [...this.state.personsGuesses];
+    newGuesses[this.state.currentTry] = guess;
+
+    if (guess === answer) {
+      this.setState({ screen: 'win' });
+    } else if (this.state.currentTry >= 5) {
+      this.setState({ screen: 'lose' });
+    } else {
+      this.setState({
+        personsGuesses: newGuesses,
+        guess: '',
+        currentTry: this.state.currentTry + 1
+      }, () => {
+        if (this.inputRef) {
+          this.inputRef.focus(); 
+        }
+      });
+    }
+
+    Keyboard.dismiss();
+  };
+
+  boxColor = (letter, index, guessWord) => {
+    if (letter === answer[index]) return '#32CD32'; 
+    if (answer.includes(letter)) return '#FFD700'; 
+    return '#D3D3D3'; 
+  };
+
+  renderStart = () => (
+    <View style={styles.container}>
+      <Text style={styles.title}>🟩 Wordle Lite 🟨</Text>
+      <TouchableOpacity style={styles.button} onPress={this.startGame}>
+        <Text style={styles.buttonText}>Start Game</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
+  renderWin = () => (
+    <View style={styles.container}>
+      <Text style={styles.title}> You Won!</Text>
+      <Text style={styles.result}>The word was: {answer}</Text>
+      <TouchableOpacity style={styles.button} onPress={this.startGame}>
+        <Text style={styles.buttonText}>Play Again</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
+  renderLose = () => (
+    <View style={styles.container}>
+      <Text style={styles.title}> You Lost</Text>
+      <Text style={styles.result}>The word was: {answer}</Text>
+      <TouchableOpacity style={styles.button} onPress={this.startGame}>
+        <Text style={styles.buttonText}>Try Again</Text>
+      </TouchableOpacity>
+    </View>
+  );
+
+  renderGame = () => (
+    <View style={styles.container}>
+      <Text style={styles.title}>Guess the Word</Text>
+      {this.state.personsGuesses.map((guessWord, index) => (
+        <View key={index} style={{ flexDirection: 'row', justifyContent: 'center', marginBottom: 6 }}>
+          {Array(5).fill('').map((_, i) => {
+            const letter = guessWord[i] || '';
+            return (
+              <View
+                key={i}
+                style={{
+                  backgroundColor: guessWord ? this.boxColor(letter, i, guessWord) : '#eee',
+                  width: 45,
+                  height: 45,
+                  margin: 2,
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  borderRadius: 4
+                }}
+              >
+                <Text style={{ fontWeight: 'bold', fontSize: 18 }}>{letter}</Text>
+              </View>
+            );
+          })}
+        </View>
+      ))}
+
+      <TextInput
+        ref={this.setInputRef}
+        style={styles.input}
+        placeholder="Type your guess"
+        maxLength={5}
+        autoCapitalize="characters"
+        value={this.state.guess}
+        onChangeText={(text) => this.setState({ guess: text })}
+        onSubmitEditing={this.submitGuess}
+      />
+
+      <TouchableOpacity style={styles.button} onPress={this.submitGuess}>
+        <Text style={styles.buttonText}>Submit</Text>
+      </TouchableOpacity>
+
+      <Text style={styles.triesLeft}>Try: {this.state.currentTry + 1} of 6</Text>
+    </View>
+  );
+
+  render() {
+    const { screen } = this.state;
+    if (screen === 'start') return this.renderStart();
+    if (screen === 'win') return this.renderWin();
+    if (screen === 'lose') return this.renderLose();
+    return this.renderGame();
+  }
+}
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f1f7fd',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20
+  },
+  title: {
+    fontSize: 30,
+    fontWeight: 'bold',
+    marginBottom: 20
+  },
+  result: {
+    fontSize: 18,
+    marginVertical: 10
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#888',
+    backgroundColor: '#fff',
+    width: 200,
+    padding: 10,
+    fontSize: 18,
+    textAlign: 'center',
+    borderRadius: 5,
+    marginTop: 10,
+    marginBottom: 10
+  },
+  button: {
+    backgroundColor: '#4682B4',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 8
+  },
+  buttonText: {
+    color: '#fff',
+    fontSize: 18
+  },
+  triesLeft: {
+    fontSize: 16,
+    marginTop: 15
+  }
+});
